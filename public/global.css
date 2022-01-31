@@ -1,0 +1,24 @@
+:root {
+  --outer-space-crayola: #283d3bff;
+  --skobeloff: #197278ff;
+  --champagne-pink: #edddd4ff;
+  --flame: #cf5c36ff;
+  --eggplant: #714955ff;
+}
+
+html,
+body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  background-color: var(--champagne-pink);
+  color: var(--outer-space-crayola);
+  margin: 0;
+  padding: 8px;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+}
