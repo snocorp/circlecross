@@ -1,15 +1,13 @@
 <script lang="ts">
   import { watchResize } from 'svelte-watch-resize'
 
-  import { wordToString, type Char, type Word } from './char'
-  import { buildCrossword, Crossword } from './crossword'
+  import { wordToString } from './char'
+  import type { Crossword } from './crossword'
+  import { GameController, type Choice, type Game } from './game'
   import { isElementEmpty } from './grid'
-  import { loadLetters, loadWords } from './loader'
-  import { shuffleArray, type Coords } from './util'
+  import type { Coords } from './util'
 
-  type Choice = {
-    letter: Char
-    chosen: boolean
+  interface PickerChoice extends Choice {
     hover: boolean
     position: Coords
   }
@@ -130,44 +128,38 @@
   }
   export const innerCircleRadius = outerCircleRadius / 4
   export let svgSizeRatio = svgSize / 400
-  export let letterChoices: Choice[] = []
-  export let words: Word[] = []
+  export let letterChoices: PickerChoice[] = []
   export let crossword: Crossword | null = null
-  export let currentChoices: Choice[] = []
+  export let currentChoices: PickerChoice[] = []
   export let choosing: boolean = false
   export let choiceArrowPosition: Coords | null = null
   export let crosswordBoxSize: number = 1
   export let crosswordOffsetX: number = 0
   export let crosswordOffsetY: number = 0
 
-  loadLetters().then((letterList: Char[]) => {
+  const controller = new GameController('daily')
+  controller.newGame().then((game: Game) => {
     letterPickerNode = document.getElementById('letterPicker')
     handlePickerResize(letterPickerNode)
 
-    shuffleArray(letterList)
-
-    letterChoices = letterList.map((letter, i) => ({
-      letter,
-      chosen: false,
+    letterChoices = game.letterChoices.map((choice, i) => ({
+      ...choice,
       hover: false,
       position: circlePosition(outerCircleRadius, i, outerCircleOffset)
     }))
-    loadWords(letterList).then((wordList) => {
-      words = Array.from(wordList)
 
-      crossword = buildCrossword(words)
-      const width = crossword.getWidth()
-      const height = crossword.getHeight()
-      const longSideLength = Math.max(width, height)
-      crosswordBoxSize = svgSize / longSideLength
-      if (longSideLength === width) {
-        crosswordOffsetX = 0
-        crosswordOffsetY = (crosswordBoxSize * (width - height)) / 2
-      } else {
-        crosswordOffsetX = (crosswordBoxSize * (height - width)) / 2
-        crosswordOffsetY = 0
-      }
-    })
+    crossword = game.crossword
+    const width = crossword.getWidth()
+    const height = crossword.getHeight()
+    const longSideLength = Math.max(width, height)
+    crosswordBoxSize = svgSize / longSideLength
+    if (longSideLength === width) {
+      crosswordOffsetX = 0
+      crosswordOffsetY = (crosswordBoxSize * (width - height)) / 2
+    } else {
+      crosswordOffsetX = (crosswordBoxSize * (height - width)) / 2
+      crosswordOffsetY = 0
+    }
   })
 </script>
 

@@ -7,14 +7,14 @@ type WordNode = {
   children: { [key: string]: WordNode }
 }
 
-export async function loadLetters(): Promise<Char[]> {
+export async function loadWordList(): Promise<string[]> {
   const response = await fetch('words.json')
 
-  const letterList: Char[] = []
-  const words: string[] = await response.json()
+  return await response.json()
+}
 
-  const randomIndex = Math.floor(Math.random() * words.length)
-  const word = stringToWord('stares') // words[randomIndex]
+export async function loadLetters(word: string): Promise<Char[]> {
+  const letterList: Char[] = []
 
   for (let i = 0; i < word.length; i++) {
     const char = word[i]
@@ -28,15 +28,15 @@ export async function loadLetters(): Promise<Char[]> {
   return letterList
 }
 
-export async function loadWords(letterList: Char[]): Promise<Set<Word>> {
+export async function loadWords(letterList: Char[]): Promise<Word[]> {
   const response = await fetch('data.json')
 
   const data: WordNode = await response.json()
 
   const wordStrings = buildWords(data, letterList)
 
-  const wordList: Set<Word> = new Set<Word>()
-  wordStrings.forEach((str) => wordList.add(stringToWord(str)))
+  const wordList: Word[] = []
+  wordStrings.forEach((str) => wordList.push(stringToWord(str)))
 
   return wordList
 }
