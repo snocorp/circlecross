@@ -91,7 +91,7 @@ export class Grid<T> {
       .map((column) =>
         column
           .map((elem) => {
-            return isElementEmpty(elem) ? '. ' : ' ' + elem.value.toString()
+            return isElementEmpty(elem) ? ' .' : ' ' + elem.value.toString()
           })
           .join(' ')
       )
@@ -137,5 +137,33 @@ export class Grid<T> {
       arr[i] = new Array<Element<T>>(this.grid[0].length).fill({})
     }
     this.grid.unshift(...arr)
+  }
+
+  trim() {
+    for (let x = 0; x < this.getWidth(); x++) {
+      console.log(`trim column ${x}`);
+
+      const emptyColumn = this.grid[x].every((elem) => isElementEmpty(elem))
+      if (emptyColumn) {
+        this.grid.splice(x, 1)
+      } else {
+        console.log('not empty');
+      }
+    }
+
+    for (let y = 0; y < this.getHeight(); y++) {
+      console.log(`trim row ${y}`);
+      
+      const emptyRow = this.grid.every((column) => isElementEmpty(column[y]))
+      if (emptyRow) {
+        for (let x = 0; x < this.getWidth(); x++) {
+          console.log(`${x},${y}`);
+          
+          console.log(this.grid[x].splice(y, 1))
+        }
+      } else {
+        console.log('not empty');
+      }
+    }
   }
 }

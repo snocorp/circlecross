@@ -211,6 +211,7 @@
 
 <style>
   .letterPicker {
+    background-color: var(--champagne-pink);
     max-width: 400px;
   }
 

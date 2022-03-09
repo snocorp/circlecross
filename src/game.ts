@@ -1,55 +1,44 @@
+import seedrandom, { type PRNG } from 'seedrandom'
+
 import type { Char } from './char'
 import { buildCrossword, Crossword } from './crossword'
 import { loadLetters, loadWordList, loadWords } from './loader'
-import { random, shuffleArray, type Coords } from './util'
+import { shuffleArray, type Coords } from './util'
 
-type GameMode = 'daily' | 'unlimited'
+export type GameMode = 'daily' | 'random'
 
 export interface Choice {
   letter: Char
   chosen: boolean
 }
 
-export type Game = {
+export interface Game {
   letterChoices: Choice[]
   crossword: Crossword
+  complete: boolean
 }
 
-export class GameController {
-  constructor(private mode: GameMode) {}
+export async function newGame(mode: GameMode): Promise<Game> {
+  const rng =
+    mode === 'random' ? seedrandom() : seedrandom(new Date().toDateString())
 
-  async newGame(): Promise<Game> {
-    const words = await loadWordList()
-    const randomIndex =
-      this.mode === 'unlimited'
-        ? Math.floor(Math.random() * words.length)
-        : this.getRandomIndex(new Date())
-    const letterList = await loadLetters(words[randomIndex])
+  const words = await loadWordList()
+  const randomIndex = Math.floor(rng() * words.length)
+  const letterList = await loadLetters(words[randomIndex])
 
-    shuffleArray(letterList)
+  shuffleArray(letterList, rng)
 
-    const letterChoices = letterList.map((letter, i) => ({
-      letter,
-      chosen: false
-    }))
+  const letterChoices = letterList.map((letter, i) => ({
+    letter,
+    chosen: false
+  }))
 
-    const wordList = await loadWords(letterList)
-    const crossword = buildCrossword(wordList)
+  const wordList = await loadWords(letterList)
+  const crossword = buildCrossword(wordList, rng)
 
-    return {
-      letterChoices,
-      crossword
-    }
-  }
-
-  private getRandomIndex(date: Date): number {
-    const diffInMillis = date.getTime() - new Date(2022, 0, 1).getTime()
-    const daysSinceStart = diffInMillis / (1000 * 60 * 60 * 24)
-
-    for (let i = 0; i < daysSinceStart; i++) {
-      random()
-    }
-
-    return random()
+  return {
+    letterChoices,
+    crossword,
+    complete: false
   }
 }

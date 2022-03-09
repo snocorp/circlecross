@@ -1,8 +1,11 @@
+import type { PRNG } from 'seedrandom'
 import { wordToString, type Char, type Word } from './char'
 import { Grid, isElementEmpty } from './grid'
-import type { Coords } from './util'
+import { shuffleArray, type Coords } from './util'
 
-type WordInfo = { start: Coords; vertical: boolean }
+type WordInfo = { start: Coords; vertical: boolean; revealed: boolean }
+
+const MAX_ATTEMPTS = 10
 
 class CrosswordBox {
   constructor(public readonly value: Char, public readonly hidden: boolean) {}
@@ -20,7 +23,7 @@ export class Crossword extends Grid<CrosswordBox> {
   }
 
   placeWord(word: Word, start: Coords, vertical: boolean) {
-    this.words[wordToString(word)] = { start, vertical }
+    this.words[wordToString(word)] = { start, vertical, revealed: false }
     if (vertical) {
       for (let i = 0; i < word.length; i++) {
         this.setElem(
@@ -48,6 +51,7 @@ export class Crossword extends Grid<CrosswordBox> {
       return
     }
 
+    info.revealed = true
     if (info.vertical) {
       for (let i = 0; i < word.length; i++) {
         this.setElem(
@@ -67,6 +71,10 @@ export class Crossword extends Grid<CrosswordBox> {
     return this
   }
 
+  allRevealed(): boolean {
+    return Object.values(this.words).every((info) => info.revealed)
+  }
+
   shiftDown(count: number) {
     super.shiftDown(count)
 
@@ -80,62 +88,102 @@ export class Crossword extends Grid<CrosswordBox> {
   }
 }
 
-export function buildCrossword(words: Word[]): Crossword {
+type CoordModifier = (c: Coords, z: number) => Coords
+interface BuilderInfo {
+  primaryCoord: 'x' | 'y'
+  secondaryCoord: 'x' | 'y'
+  shiftFunction: 'shiftDown' | 'shiftRight'
+  expandFunction: 'expandDown' | 'expandRight'
+  lengthFunction: 'getHeight' | 'getWidth'
+  lengthFunctionAltDir: 'getHeight' | 'getWidth'
+  coordBefore: CoordModifier
+  coordAfter: CoordModifier
+  coordBeforeAltDir: CoordModifier
+  coordAfterAltDir: CoordModifier
+  coordAt: CoordModifier
+  wordStart: CoordModifier
+}
+
+export function buildCrossword(words: Word[], rng: PRNG): Crossword {
   const sortedWords = words.sort((a, b) => b.length - a.length)
 
   const cw: Crossword = new Crossword()
   const grid = cw
 
-  let x: number
-  let y: number
   const firstWord = sortedWords[0]
-  let vertical = Math.random() > 0.5
+  let vertical = rng() > 0.5
   cw.placeWord(firstWord, { x: 0, y: 0 }, vertical)
 
   for (let i = 1; i < sortedWords.length; i++) {
     const currentWord = sortedWords[i]
 
+    console.debug('Attempting to place', wordToString(currentWord))
+
     let attempts = 0
     let foundPlacement = false
-    while (!foundPlacement && attempts < 100) {
+    while (!foundPlacement && attempts < MAX_ATTEMPTS) {
       attempts++
-      vertical = !vertical
 
       // pick a random letter
-      const randomLetterIndex = Math.floor(Math.random() * currentWord.length)
+      const randomLetterIndex = Math.floor(rng() * currentWord.length)
       const coordList = grid.findValue(
         (v: CrosswordBox) => v.value === currentWord[randomLetterIndex]
       )
-      const randomCoordIndex = Math.floor(Math.random() * coordList.length)
-      const coord = coordList[randomCoordIndex]
+      shuffleArray(coordList, rng)
+      console.debug(currentWord[randomLetterIndex], coordList)
 
-      let blocked = false
-      if (vertical) {
-        // check if there is room above
-        const yStart = coord.y - randomLetterIndex
-        if (yStart < 0) {
-          const diff = -yStart
-          grid.shiftDown(diff)
-          coord.y += diff
+      let c = 0
+      while (!foundPlacement && c < coordList.length) {
+        const coord = coordList[c]
+        vertical = !vertical
+
+        console.debug(vertical ? 'vertically' : 'horizontally')
+
+        let blocked = false
+        const bi = getBuilderInfo(vertical)
+        const start = coord[bi.primaryCoord] - randomLetterIndex
+        // check if there is room above/beside
+        if (start < 0) {
+          const diff = -start
+          grid[bi.shiftFunction](diff)
+          coordList.forEach((coord) => {
+            coord[bi.primaryCoord] += diff
+          })
         }
+
         // check if there is room below
-        const yEnd = coord.y - randomLetterIndex + currentWord.length
-        if (yEnd >= grid.getHeight()) {
-          grid.expandDown(yEnd - grid.getHeight())
+        const end =
+          coord[bi.primaryCoord] - randomLetterIndex + currentWord.length
+        if (end >= grid[bi.lengthFunction]()) {
+          grid[bi.expandFunction](end - grid[bi.lengthFunction]())
         }
 
         for (let i = 0; i < currentWord.length && !blocked; i++) {
-          const y = coord.y - randomLetterIndex + i
+          const z = coord[bi.primaryCoord] - randomLetterIndex + i
+          console.debug(
+            bi.coordAt(coord, z),
+            grid.getElem(bi.coordAt(coord, z)).value?.value
+          )
+
           if (i === 0) {
-            const elemBefore = y > 0 && grid.hasValue({ x: coord.x, y: y - 1 })
+            const elemBefore = z > 0 && grid.hasValue(bi.coordBefore(coord, z))
             if (elemBefore) {
+              console.debug(
+                `Blocked at beginning ${
+                  grid.getElem(bi.coordBefore(coord, z)).value.value
+                }`,
+                bi.coordBefore(coord, z)
+              )
+
               blocked = true
             }
           } else if (i + 1 === currentWord.length) {
             const elemAfter =
-              y + 1 < grid.getHeight() &&
-              grid.hasValue({ x: coord.x, y: y + 1 })
+              z + 1 < grid[bi.lengthFunction]() &&
+              grid.hasValue(bi.coordAfter(coord, z))
             if (elemAfter) {
+              console.debug('Blocked at end', bi.coordAfter(coord, z))
+
               blocked = true
             }
           }
@@ -143,17 +191,34 @@ export function buildCrossword(words: Word[]): Crossword {
             continue
           }
 
-          const elem = grid.getElem({ x: coord.x, y })
+          const elem = grid.getElem(bi.coordAt(coord, z))
           if (isElementEmpty(elem)) {
-            // check if there's space to the sides
+            // check if there's space at the ends
             if (
-              (coord.x > 0 && grid.hasValue({ x: coord.x - 1, y })) ||
-              (coord.x + 1 < grid.getWidth() &&
-                grid.hasValue({ x: coord.x + 1, y }))
+              coord[bi.secondaryCoord] > 0 &&
+              grid.hasValue(bi.coordBeforeAltDir(coord, z))
             ) {
+              console.debug(
+                'Blocked above/left',
+                bi.coordBeforeAltDir(coord, z)
+              )
+
+              blocked = true
+            } else if (
+              coord[bi.secondaryCoord] + 1 < grid[bi.lengthFunctionAltDir]() &&
+              grid.hasValue(bi.coordAfterAltDir(coord, z))
+            ) {
+              console.debug(
+                'Blocked below/right',
+                bi.coordAfterAltDir(coord, z)
+              )
               blocked = true
             }
           } else if (elem.value.value !== currentWord[i]) {
+            console.debug(
+              `Blocked by existing letter (${elem.value.value} !== ${currentWord[i]})`,
+              bi.coordAt(coord, z)
+            )
             blocked = true
           }
         }
@@ -161,72 +226,57 @@ export function buildCrossword(words: Word[]): Crossword {
           // place the word
           cw.placeWord(
             currentWord,
-            { x: coord.x, y: coord.y - randomLetterIndex },
+            bi.wordStart(coord, randomLetterIndex),
             vertical
           )
           foundPlacement = true
         }
-      } else {
-        // check if there is room to the left
-        const xStart = coord.x - randomLetterIndex
-        if (xStart < 0) {
-          const diff = -xStart
-          grid.shiftRight(diff)
-          coord.x += diff
-        }
-        // check if ther is room to the right
-        const xEnd = coord.x - randomLetterIndex + currentWord.length
-        if (xEnd >= grid.getWidth()) {
-          grid.expandRight(xEnd - grid.getWidth())
-        }
 
-        for (let i = 0; i < currentWord.length && !blocked; i++) {
-          const x = coord.x - randomLetterIndex + i
-          if (i === 0) {
-            const elemBefore = x > 0 && grid.hasValue({ x: x - 1, y: coord.y })
-            if (elemBefore) {
-              blocked = true
-            }
-          } else if (i + 1 === currentWord.length) {
-            const elemAfter =
-              x + 1 < grid.getWidth() && grid.hasValue({ x: x + 1, y: coord.y })
-            if (elemAfter) {
-              blocked = true
-            }
-          }
-          if (blocked) {
-            continue
-          }
-
-          const elem = grid.getElem({ x, y: coord.y })
-          if (isElementEmpty(elem)) {
-            // check if there's space to the top and bottom
-            if (
-              (coord.y > 0 && grid.hasValue({ x, y: coord.y - 1 })) ||
-              (coord.y + 1 < grid.getHeight() &&
-                grid.hasValue({ x, y: coord.y + 1 }))
-            ) {
-              blocked = true
-            }
-          } else if (elem.value.value !== currentWord[i]) {
-            blocked = true
-          }
-        }
-        if (!blocked) {
-          // place the word
-          cw.placeWord(
-            currentWord,
-            { x: coord.x - randomLetterIndex, y: coord.y },
-            vertical
-          )
-          foundPlacement = true
-        }
+        c++
       }
     }
+
+    if (attempts === MAX_ATTEMPTS) {
+      console.warn(`No placement found for ${currentWord}`)
+    }
   }
+
+  grid.trim()
 
   console.log('Final crossword')
   console.log(grid.toString())
 
   return cw
+}
+
+function getBuilderInfo(vertical: boolean): BuilderInfo {
+  return vertical
+    ? {
+        primaryCoord: 'y',
+        secondaryCoord: 'x',
+        shiftFunction: 'shiftDown',
+        expandFunction: 'expandDown',
+        lengthFunction: 'getHeight',
+        lengthFunctionAltDir: 'getWidth',
+        coordBefore: (c: Coords, z: number) => ({ x: c.x, y: z - 1 }),
+        coordAfter: (c: Coords, z: number) => ({ x: c.x, y: z + 1 }),
+        coordBeforeAltDir: (c: Coords, z: number) => ({ x: c.x - 1, y: z }),
+        coordAfterAltDir: (c: Coords, z: number) => ({ x: c.x + 1, y: z }),
+        coordAt: (c: Coords, z: number) => ({ x: c.x, y: z }),
+        wordStart: (c: Coords, index: number) => ({ x: c.x, y: c.y - index })
+      }
+    : {
+        primaryCoord: 'x',
+        secondaryCoord: 'y',
+        shiftFunction: 'shiftRight',
+        expandFunction: 'expandRight',
+        lengthFunction: 'getWidth',
+        lengthFunctionAltDir: 'getHeight',
+        coordBefore: (c: Coords, z: number) => ({ x: z - 1, y: c.y }),
+        coordAfter: (c: Coords, z: number) => ({ x: z + 1, y: c.y }),
+        coordBeforeAltDir: (c: Coords, z: number) => ({ x: z, y: c.y - 1 }),
+        coordAfterAltDir: (c: Coords, z: number) => ({ x: z, y: c.y + 1 }),
+        coordAt: (c: Coords, z: number) => ({ x: z, y: c.y }),
+        wordStart: (c: Coords, index: number) => ({ x: c.x - index, y: c.y })
+      }
 }
