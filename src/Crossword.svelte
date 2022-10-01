@@ -1,23 +1,24 @@
 <script lang="ts">
-  import type { Crossword } from './crossword'
-  import { isElementEmpty } from './grid'
+  import type { Crossword } from "./crossword";
+  import { isElementEmpty } from "./grid";
 
-  export let svgSize: number
-  export let crossword: Crossword
+  export let svgSize: number;
+  export let crossword: Crossword;
 
-  let crosswordBoxSize: number = 1
-  let crosswordOffsetX: number = 0
-  let crosswordOffsetY: number = 0
-  const width = crossword.getWidth()
-  const height = crossword.getHeight()
-  const longSideLength = Math.max(width, height)
-  crosswordBoxSize = svgSize / longSideLength
+  let crosswordBoxSize: number = 1;
+  let crosswordOffsetX: number = 0;
+  let crosswordOffsetY: number = 0;
+  const width = crossword.getWidth();
+  const height = crossword.getHeight();
+  const longSideLength = Math.max(width, height);
+  crosswordBoxSize = svgSize / longSideLength;
+
   if (longSideLength === width) {
-    crosswordOffsetX = 0
-    crosswordOffsetY = (crosswordBoxSize * (width - height)) / 2
+    crosswordOffsetX = 0;
+    crosswordOffsetY = (crosswordBoxSize * (width - height)) / 2;
   } else {
-    crosswordOffsetX = (crosswordBoxSize * (height - width)) / 2
-    crosswordOffsetY = 0
+    crosswordOffsetX = (crosswordBoxSize * (height - width)) / 2;
+    crosswordOffsetY = 0;
   }
 </script>
 

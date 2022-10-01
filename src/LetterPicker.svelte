@@ -1,86 +1,84 @@
 <script lang="ts">
-  import { watchResize } from 'svelte-watch-resize'
-  import { createEventDispatcher, onMount } from 'svelte'
-  import type { Choice } from './game'
-  import type { Coords } from './util'
+  import { watchResize } from "svelte-watch-resize";
+  import { createEventDispatcher, onMount } from "svelte";
+  import type { Choice } from "./game";
+  import type { Coords } from "./util";
 
   interface PickerChoice extends Choice {
-    hover: boolean
-    position: Coords
+    hover: boolean;
+    position: Coords;
   }
 
-  export let svgSize: number
-  export let choices: Choice[]
+  export let svgSize: number;
+  export let choices: Choice[];
 
   console.log(choices);
 
-  let svgSizeRatio = svgSize / 400
-  let outerCircleRadius = svgSize * 0.3
-  let innerCircleRadius = outerCircleRadius / 4
+  let svgSizeRatio = svgSize / 400;
+  let outerCircleRadius = svgSize * 0.3;
+  let innerCircleRadius = outerCircleRadius / 4;
   let outerCircleOffset: Coords = {
     x: svgSize * 0.5,
-    y: svgSize * 0.5
-  }
+    y: svgSize * 0.5,
+  };
 
   $: letterChoices = choices.map((choice, i) => {
-      console.log(choice);
-      
-      return {
-        ...choice,
-        hover: false,
-        position: circlePosition(outerCircleRadius, i, outerCircleOffset)
-      }
-    })
-  let currentChoices: PickerChoice[] = []
-  let choosing: boolean = false
-  let choiceArrowPosition: Coords | null = null
+    return {
+      ...choice,
+      hover: false,
+      position: circlePosition(outerCircleRadius, i, outerCircleOffset),
+    };
+  });
+  let currentChoices: PickerChoice[] = [];
+  let choosing: boolean = false;
+  let choiceArrowPosition: Coords | null = null;
 
-  let letterPickerNode: HTMLElement
+  let letterPickerNode: HTMLElement;
 
   type EventMap = {
-    choice: Choice[]
-  }
-  const dispatch = createEventDispatcher<EventMap>()
+    choice: Choice[];
+  };
+  const dispatch = createEventDispatcher<EventMap>();
 
   onMount(() => {
-    letterPickerNode = document.getElementById('letterPicker')
-    handlePickerResize(letterPickerNode)
-  })
+    letterPickerNode = document.getElementById("letterPicker");
+    handlePickerResize(letterPickerNode);
+  });
 
   function circlePosition(
     radius: number,
     index: number,
     offset: Coords
   ): Coords {
-    const angle = ((2 * Math.PI) / 6) * index
+    const angle = ((2 * Math.PI) / 6) * index;
     const coords = {
       x: radius * Math.sin(angle) + offset.x,
-      y: radius * Math.cos(angle) + offset.y
-    }
-    return coords
+      y: radius * Math.cos(angle) + offset.y,
+    };
+    return coords;
   }
 
   function handleMouseMove(event: MouseEvent) {
     if (choosing && currentChoices.length < 6) {
       choiceArrowPosition = {
         x: event.offsetX * svgSizeRatio,
-        y: event.offsetY * svgSizeRatio
-      }
+        y: event.offsetY * svgSizeRatio,
+      };
     } else {
-      choiceArrowPosition = null
+      choiceArrowPosition = null;
     }
   }
 
   function handleTouchMove(event: TouchEvent) {
     if (choosing && currentChoices.length < 6) {
-      const touch = event.touches.item(0)
+      const touch = event.touches.item(0);
 
-      const rect = letterPickerNode.getBoundingClientRect()
+      const rect = letterPickerNode.getBoundingClientRect();
 
       choiceArrowPosition = {
         x: (touch.clientX - rect.x) * svgSizeRatio,
-        y: (touch.clientY - rect.y) * svgSizeRatio
-      }
+        y: (touch.clientY - rect.y) * svgSizeRatio,
+      };
       for (let i = 0; i < letterChoices.length; i++) {
         if (
           letterChoices[i].position.x - innerCircleRadius <
@@ -93,56 +91,56 @@
             choiceArrowPosition.y
         ) {
           if (!letterChoices[i].chosen) {
-            letterChoices[i].chosen = true
-            currentChoices = [...currentChoices, letterChoices[i]]
+            letterChoices[i].chosen = true;
+            currentChoices = [...currentChoices, letterChoices[i]];
           }
-          break
+          break;
         }
       }
     } else {
-      choiceArrowPosition = null
+      choiceArrowPosition = null;
     }
   }
 
   function handleChoiceMouseEnter(index: number) {
     return () => {
       if (choosing && !letterChoices[index].chosen) {
-        letterChoices[index].chosen = true
-        currentChoices = [...currentChoices, letterChoices[index]]
+        letterChoices[index].chosen = true;
+        currentChoices = [...currentChoices, letterChoices[index]];
       }
-      letterChoices[index].hover = true
-    }
+      letterChoices[index].hover = true;
+    };
   }
 
   function handleChoiceMouseLeave(index: number) {
     return () => {
-      letterChoices[index].hover = false
-    }
+      letterChoices[index].hover = false;
+    };
   }
 
   function handleChoiceMouseDown(index: number) {
     return () => {
       if (!letterChoices[index].chosen) {
-        choosing = true
-        letterChoices[index].chosen = true
-        currentChoices = [...currentChoices, letterChoices[index]]
+        choosing = true;
+        letterChoices[index].chosen = true;
+        currentChoices = [...currentChoices, letterChoices[index]];
       }
-    }
+    };
   }
 
   function handlePickerResize(node: HTMLElement) {
-    svgSizeRatio = svgSize / node.clientWidth
+    svgSizeRatio = svgSize / node.clientWidth;
   }
 
   function chooseLetters() {
-    const choices = currentChoices
-    dispatch('choice', choices)
+    const choices = currentChoices;
+    dispatch("choice", choices);
     for (let i = 0; i < letterChoices.length; i++) {
-      letterChoices[i].chosen = false
+      letterChoices[i].chosen = false;
     }
-    currentChoices = []
-    choosing = false
-    choiceArrowPosition = null
+    currentChoices = [];
+    choosing = false;
+    choiceArrowPosition = null;
   }
 </script>
 
