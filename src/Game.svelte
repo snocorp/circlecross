@@ -11,11 +11,11 @@
     if (chosenWord.length >= 3) {
       const foundWord = game.crossword.findWord(chosenWord);
       if (foundWord) {
-        console.log(`match found for ${wordToString(chosenWord)}`);
+        console.debug(`match found for ${wordToString(chosenWord)}`);
         game.crossword = game.crossword.revealWord(chosenWord);
         game.complete = game.crossword.allRevealed();
       } else {
-        console.log(`no match found for ${wordToString(chosenWord)}`);
+        console.debug(`no match found for ${wordToString(chosenWord)}`);
       }
     }
   }

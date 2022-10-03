@@ -145,24 +145,16 @@ export class Grid<T> {
 
   trim() {
     for (let x = 0; x < this.getWidth(); x++) {
-      console.log(`trim column ${x}`);
-
       const emptyColumn = this.grid[x].every((elem) => isElementEmpty(elem));
       if (emptyColumn) {
         this.removeColumn(x);
-      } else {
-        console.log("not empty");
       }
     }
 
     for (let y = 0; y < this.getHeight(); y++) {
-      console.log(`trim row ${y}`);
-
       const emptyRow = this.grid.every((column) => isElementEmpty(column[y]));
       if (emptyRow) {
         this.removeRow(y);
-      } else {
-        console.log("not empty");
       }
     }
   }

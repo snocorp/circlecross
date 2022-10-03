@@ -55,15 +55,11 @@ export class Crossword extends Grid<CrosswordBox> {
     if (info.vertical) {
       for (let i = 0; i < word.length; i++) {
         const coords = { x: info.start.x, y: info.start.y + i };
-        console.log("vertical", coords);
-
         this.setElem(coords, new CrosswordBox(word[i], false));
       }
     } else {
       for (let i = 0; i < word.length; i++) {
         const coords = { x: info.start.x + i, y: info.start.y };
-        console.log("horizontal", coords);
-
         this.setElem(coords, new CrosswordBox(word[i], false));
       }
     }
@@ -262,9 +258,6 @@ export function buildCrossword(words: Word[], rng: PRNG): Crossword {
   }
 
   grid.trim();
-
-  console.log("Final crossword");
-  console.log(grid.toString());
 
   return cw;
 }
