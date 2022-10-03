@@ -57,7 +57,7 @@
           class="material-icons"
           on:click={handleMenuClick}>menu</IconButton
         >
-        <Title>Word Circle</Title>
+        <Title>CircleCross</Title>
       </Section>
     </Row>
   </TopAppBar>
