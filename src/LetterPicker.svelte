@@ -12,8 +12,6 @@
   export let svgSize: number;
   export let choices: Choice[];
 
-  console.log(choices);
-
   let svgSizeRatio = svgSize / 400;
   let outerCircleRadius = svgSize * 0.3;
   let innerCircleRadius = outerCircleRadius / 4;
