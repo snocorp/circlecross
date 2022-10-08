@@ -5,7 +5,7 @@
   import Fireworks from "./Fireworks.svelte";
   import type { Choice, Game } from "./game";
 
-  let showFireworks = true;
+  let showFireworks = false;
 
   function stopFireworks() {
     document.body.classList.remove("fireworks");
@@ -25,7 +25,7 @@
         // delay fireworks to avoid conflict with letter picker events
         setTimeout(() => {
           document.body.classList.add("fireworks");
-          showFireworks = true; //game.complete;
+          showFireworks = game.complete;
         }, 200);
       } else {
         console.debug(`no match found for ${wordToString(chosenWord)}`);
