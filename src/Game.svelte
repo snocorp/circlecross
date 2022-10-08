@@ -22,11 +22,13 @@
         game.crossword = game.crossword.revealWord(chosenWord);
         game.complete = game.crossword.allRevealed();
 
-        // delay fireworks to avoid conflict with letter picker events
-        setTimeout(() => {
-          document.body.classList.add("fireworks");
-          showFireworks = game.complete;
-        }, 200);
+        if (game.complete) {
+          // delay fireworks to avoid conflict with letter picker events
+          setTimeout(() => {
+            document.body.classList.add("fireworks");
+            showFireworks = true;
+          }, 200);
+        }
       } else {
         console.debug(`no match found for ${wordToString(chosenWord)}`);
       }
