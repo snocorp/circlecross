@@ -9,6 +9,7 @@
     position: Coords;
   }
 
+  export let disabled: boolean;
   export let svgSize: number;
   export let choices: Choice[];
 
@@ -57,7 +58,7 @@
   }
 
   function handleMouseMove(event: MouseEvent) {
-    if (choosing && currentChoices.length < 6) {
+    if (!disabled && choosing && currentChoices.length < 6) {
       choiceArrowPosition = {
         x: event.offsetX * svgSizeRatio,
         y: event.offsetY * svgSizeRatio,
@@ -68,7 +69,7 @@
   }
 
   function handleTouchMove(event: TouchEvent) {
-    if (choosing && currentChoices.length < 6) {
+    if (!disabled && choosing && currentChoices.length < 6) {
       const touch = event.touches.item(0);
 
       const rect = letterPickerNode.getBoundingClientRect();
@@ -102,6 +103,9 @@
 
   function handleChoiceMouseEnter(index: number) {
     return () => {
+      if (disabled) {
+        return;
+      }
       if (choosing && !letterChoices[index].chosen) {
         letterChoices[index].chosen = true;
         currentChoices = [...currentChoices, letterChoices[index]];
@@ -118,6 +122,9 @@
 
   function handleChoiceMouseDown(index: number) {
     return () => {
+      if (disabled) {
+        return;
+      }
       if (!letterChoices[index].chosen) {
         choosing = true;
         letterChoices[index].chosen = true;

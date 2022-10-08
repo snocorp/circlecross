@@ -5,6 +5,13 @@
   import Fireworks from "./Fireworks.svelte";
   import type { Choice, Game } from "./game";
 
+  let showFireworks = true;
+
+  function stopFireworks() {
+    document.body.classList.remove("fireworks");
+    showFireworks = false;
+  }
+
   function handleChoice(event: CustomEvent<Choice[]>) {
     const choices = event.detail;
     const chosenWord = choices.map((choice) => choice.letter);
@@ -14,6 +21,12 @@
         console.debug(`match found for ${wordToString(chosenWord)}`);
         game.crossword = game.crossword.revealWord(chosenWord);
         game.complete = game.crossword.allRevealed();
+
+        // delay fireworks to avoid conflict with letter picker events
+        setTimeout(() => {
+          document.body.classList.add("fireworks");
+          showFireworks = true; //game.complete;
+        }, 200);
       } else {
         console.debug(`no match found for ${wordToString(chosenWord)}`);
       }
@@ -25,10 +38,13 @@
   export let game: Game | null = null;
 </script>
 
+<svelte:body on:click={stopFireworks} />
+
 <div>
   {#if game}
-    {#if game.complete}<Fireworks />{/if}
+    {#if showFireworks}<Fireworks />{/if}
     <LetterPicker
+      disabled={game.complete}
       {svgSize}
       choices={game.letterChoices}
       on:choice={handleChoice}

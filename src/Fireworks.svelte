@@ -6,7 +6,7 @@
 <svelte:body class="fireworks" />
 
 <style lang="scss">
-	@use "sass:math";
+  @use "sass:math";
 
   $particles: 50;
   $width: 500;
@@ -17,9 +17,11 @@
   $box-shadow2: ();
   @for $i from 0 through $particles {
     $box-shadow: $box-shadow,
-      random($width) - math.div($width, 2) +
+      random($width) -
+        math.div($width, 2) +
         px
-        random($height) - math.div($height, 1.2) +
+        random($height) -
+        math.div($height, 1.2) +
         px
         hsl(random(360), 100%, 50%);
     $box-shadow2: $box-shadow2, 0 0 #fff;
@@ -78,15 +80,16 @@
     -ms-transform: $settings;
   }
 
-	:global(body) {
-		overflow: hidden;
-	}
+  :global(body.fireworks) {
+    overflow: hidden;
+  }
 
   .pyro > .before,
   .pyro > .after {
     position: absolute;
     width: 5px;
     height: 5px;
+    z-index: 100;
     border-radius: 50%;
     box-shadow: $box-shadow2;
     @include animation(
