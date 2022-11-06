@@ -216,6 +216,7 @@
   .letterPicker {
     background-color: var(--champagne-pink);
     max-width: 400px;
+    max-height: calc(50vh - 32px);
   }
 
   .choiceCircle {

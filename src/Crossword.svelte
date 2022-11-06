@@ -57,6 +57,7 @@
   .crossword {
     background-color: var(--outer-space-crayola);
     max-width: 400px;
+    max-height: calc(50vh - 32px);
   }
 
   .crosswordBox {

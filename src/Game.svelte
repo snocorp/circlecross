@@ -42,7 +42,7 @@
 
 <svelte:body on:click={stopFireworks} />
 
-<div>
+<div class="gameContent">
   {#if game}
     {#if showFireworks}<Fireworks />{/if}
     <LetterPicker
@@ -56,3 +56,11 @@
       />{/if}
   {/if}
 </div>
+
+<style lang="scss">
+  .gameContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+</style>
