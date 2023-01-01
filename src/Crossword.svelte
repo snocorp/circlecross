@@ -43,6 +43,7 @@
       {#if !isElementEmpty(elem) && !elem.value.hidden}
         <text
           class="crosswordBoxText"
+          class:active={elem.value.active}
           font-size="{crosswordBoxSize * 0.7}px"
           x={x * crosswordBoxSize + crosswordBoxSize / 2 + crosswordOffsetX}
           y={y * crosswordBoxSize + crosswordBoxSize / 2 + crosswordOffsetY}
@@ -75,10 +76,15 @@
   }
 
   .crosswordBoxText {
+    font-weight: 300;
     text-anchor: middle;
     dominant-baseline: middle;
     cursor: pointer;
     pointer-events: none;
     user-select: none;
+  }
+
+  .crosswordBoxText.active {
+    font-weight: 700;
   }
 </style>

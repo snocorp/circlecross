@@ -8,7 +8,11 @@ type WordInfo = { start: Coords; vertical: boolean; revealed: boolean };
 const MAX_ATTEMPTS = 10;
 
 class CrosswordBox {
-  constructor(public readonly value: Char, public readonly hidden: boolean) {}
+  constructor(
+    public readonly value: Char,
+    public readonly hidden: boolean,
+    public active: boolean
+  ) {}
 
   toString() {
     return this.value;
@@ -28,40 +32,40 @@ export class Crossword extends Grid<CrosswordBox> {
       for (let i = 0; i < word.length; i++) {
         this.setElem(
           { x: start.x, y: start.y + i },
-          new CrosswordBox(word[i], true)
+          new CrosswordBox(word[i], true, false)
         );
       }
     } else {
       for (let i = 0; i < word.length; i++) {
         this.setElem(
           { x: start.x + i, y: start.y },
-          new CrosswordBox(word[i], true)
+          new CrosswordBox(word[i], true, false)
         );
       }
     }
   }
 
+  /**
+   * Look up the word in the map of words in the crossword.
+   * @param word The word to look up
+   * @returns The word info if found, undefined otherwise.
+   */
   findWord(word: Word): WordInfo | undefined {
     return this.words[wordToString(word)];
   }
 
-  revealWord(word: Word): Crossword {
+  revealWord(word: Word, active: boolean): Crossword {
     const info = this.findWord(word);
     if (!info) {
       return;
     }
 
     info.revealed = true;
-    if (info.vertical) {
-      for (let i = 0; i < word.length; i++) {
-        const coords = { x: info.start.x, y: info.start.y + i };
-        this.setElem(coords, new CrosswordBox(word[i], false));
-      }
-    } else {
-      for (let i = 0; i < word.length; i++) {
-        const coords = { x: info.start.x + i, y: info.start.y };
-        this.setElem(coords, new CrosswordBox(word[i], false));
-      }
+    for (let i = 0; i < word.length; i++) {
+      const coords = info.vertical
+        ? { x: info.start.x, y: info.start.y + i }
+        : { x: info.start.x + i, y: info.start.y };
+      this.setElem(coords, new CrosswordBox(word[i], false, active));
     }
 
     return this;

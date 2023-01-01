@@ -5,6 +5,11 @@
   import Fireworks from "./Fireworks.svelte";
   import type { Choice, Game } from "./game";
 
+  /**
+   * Timeout for active letters in milliseconds.
+   */
+  const ACTIVE_TIMEOUT = 1000;
+
   let showFireworks = false;
 
   function stopFireworks() {
@@ -19,8 +24,13 @@
       const foundWord = game.crossword.findWord(chosenWord);
       if (foundWord) {
         console.debug(`match found for ${wordToString(chosenWord)}`);
-        game.crossword = game.crossword.revealWord(chosenWord);
+        game.crossword = game.crossword.revealWord(chosenWord, true);
         game.complete = game.crossword.allRevealed();
+
+        // turn off active mode after some time
+        setTimeout(() => {
+          game.crossword = game.crossword.revealWord(chosenWord, false);
+        }, ACTIVE_TIMEOUT);
 
         if (game.complete) {
           // delay fireworks to avoid conflict with letter picker events
