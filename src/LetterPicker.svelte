@@ -4,23 +4,53 @@
   import type { Choice } from "./game";
   import type { Coords } from "./util";
 
+  /**
+   * A choice from the letter picker.
+   */
   interface PickerChoice extends Choice {
     hover: boolean;
     position: Coords;
   }
 
+  /**
+   * Whether or not the picker is disabled.
+   */
   export let disabled: boolean;
+
+  /**
+   * The size of the SVG.
+   */
   export let svgSize: number;
+
+  /**
+   * The choices of letters.
+   */
   export let choices: Choice[];
 
+  /**
+   * Normalized SVG size to do coordinate calculations.
+   */
   let svgSizeRatio = svgSize / 400;
+
+  /**
+   * The outer circle radius. Roughly 1/3 of the full SVG size.
+   */
   let outerCircleRadius = svgSize * 0.3;
+
+  /**
+   * The radius of the inner circle. One quarter of the full SVG size.
+   */
   let innerCircleRadius = outerCircleRadius / 4;
+
+  /** The offset position of the outer circle */
   let outerCircleOffset: Coords = {
     x: svgSize * 0.5,
     y: svgSize * 0.5,
   };
 
+  /**
+   * Create a list of picker choices from the given choices.
+   */
   $: letterChoices = choices.map((choice, i) => {
     return {
       ...choice,
@@ -28,15 +58,37 @@
       position: circlePosition(outerCircleRadius, i, outerCircleOffset),
     };
   });
+
+  /**
+   * The current list of choices.
+   */
   let currentChoices: PickerChoice[] = [];
+
+  /**
+   * Whether or not the user is currently choosing letters.
+   */
   let choosing: boolean = false;
+
+  /**
+   * The position of the choice arrow indicating which letter will be next.
+   */
   let choiceArrowPosition: Coords | null = null;
 
+  /**
+   * The DOM node of the letter picker.
+   */
   let letterPickerNode: HTMLElement;
 
+  /**
+   * A type for dispatching events including the current choice.
+   */
   type EventMap = {
     choice: Choice[];
   };
+
+  /**
+   * Event dispatcher for choosing letters.
+   */
   const dispatch = createEventDispatcher<EventMap>();
 
   onMount(() => {
@@ -44,6 +96,12 @@
     handlePickerResize(letterPickerNode);
   });
 
+  /**
+   * Calculate the circle position on the outer circle for the letter with the given index.
+   * @param radius The radius of the circle
+   * @param index The index of the circle
+   * @param offset The offset of the outer circle.
+   */
   function circlePosition(
     radius: number,
     index: number,
@@ -57,6 +115,10 @@
     return coords;
   }
 
+  /**
+   * Handle a mouse move event.
+   * @param event The event
+   */
   function handleMouseMove(event: MouseEvent) {
     if (!disabled && choosing && currentChoices.length < 6) {
       choiceArrowPosition = {
@@ -68,6 +130,10 @@
     }
   }
 
+  /**
+   * Handle a touch move event.
+   * @param event The event
+   */
   function handleTouchMove(event: TouchEvent) {
     if (!disabled && choosing && currentChoices.length < 6) {
       const touch = event.touches.item(0);
@@ -101,6 +167,10 @@
     }
   }
 
+  /**
+   * Handle the event when the mouse enters a choice circle.
+   * @param index The index of the choice
+   */
   function handleChoiceMouseEnter(index: number) {
     return () => {
       if (disabled) {
@@ -114,12 +184,20 @@
     };
   }
 
+  /**
+   * Handle the event when the mouse leaves a choice circle.
+   * @param index The index of the choice
+   */
   function handleChoiceMouseLeave(index: number) {
     return () => {
       letterChoices[index].hover = false;
     };
   }
 
+  /**
+   * Handle a mouse down event on a choice circle.
+   * @param index The index of the choice
+   */
   function handleChoiceMouseDown(index: number) {
     return () => {
       if (disabled) {
@@ -133,10 +211,17 @@
     };
   }
 
+  /**
+   * Handle a resize of the picker.
+   * @param node The DOM node
+   */
   function handlePickerResize(node: HTMLElement) {
     svgSizeRatio = svgSize / node.clientWidth;
   }
 
+  /**
+   * Dispatch the current choices and clear the selection.
+   */
   function chooseLetters() {
     const choices = currentChoices;
     dispatch("choice", choices);

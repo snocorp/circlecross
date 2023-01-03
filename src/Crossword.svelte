@@ -2,15 +2,46 @@
   import type { Crossword } from "./crossword";
   import { isElementEmpty } from "./grid";
 
+  /**
+   * The size of the SVG.
+   */
   export let svgSize: number;
+
+  /**
+   * The crossword to be rendered.
+   */
   export let crossword: Crossword;
 
+  /**
+   * The size of each crossword box, equal to the size of the SVG divided by the length of the longest side.
+   */
   let crosswordBoxSize: number = 1;
+
+  /**
+   * The offset of the leftmost box in the crossword.
+   */
   let crosswordOffsetX: number = 0;
+
+  /**
+   * The offset of the topmost box in the crossword.
+   */
   let crosswordOffsetY: number = 0;
+
+  /**
+   * The width of the crossword.
+   */
   const width = crossword.getWidth();
+
+  /**
+   * The height of the crosword.
+   */
   const height = crossword.getHeight();
+
+  /**
+   * The length of the longest side of the crossword.
+   */
   const longSideLength = Math.max(width, height);
+
   crosswordBoxSize = svgSize / longSideLength;
 
   if (longSideLength === width) {

@@ -13,27 +13,56 @@
   import { onMount } from "svelte";
   import Button, { Label } from "@smui/button";
 
+  /**
+   * Whether or not the menu drawer is open.
+   */
   let drawerOpen = false;
+
+  /**
+   * Whether or not to show the confirmation dialog.
+   */
   let showConfirmDialog = false;
+
+  /**
+   * The current game mode
+   */
   let gameMode: GameMode = "daily";
+
+  /**
+   * The game instance
+   */
   let game: Game | null = null;
 
+  /**
+   * Close the menu when it is clicked.
+   * @param event The event
+   */
   const handleMenuClick = (event: CustomEvent) => {
     event.preventDefault();
     drawerOpen = !drawerOpen;
   };
 
+  /**
+   * Sets the game mode
+   * @param mode The new mode
+   */
   const setGameMode = (mode: GameMode) => {
     if (gameMode !== mode) {
       gameMode = mode;
     }
   };
 
+  /**
+   * Use the confirmation dialog to confirm they want to start a new game.
+   */
   const confirmNewGame = () => {
     drawerOpen = false;
     showConfirmDialog = true;
   };
 
+  /**
+   * Starts a new game.
+   */
   const startGame = () => {
     drawerOpen = false;
     showConfirmDialog = false;

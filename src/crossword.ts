@@ -3,45 +3,70 @@ import { wordToString, type Char, type Word } from "./char";
 import { Grid, isElementEmpty } from "./grid";
 import { shuffleArray, type Coords } from "./util";
 
+/**
+ * Information about the words.
+ */
 type WordInfo = { start: Coords; vertical: boolean; revealed: boolean };
 
-const MAX_ATTEMPTS = 10;
+/**
+ * The maximum number of attempts to place a word before giving up.
+ */
+const MAX_ATTEMPTS = 100;
 
+/**
+ * A single box in the crossword.
+ */
 class CrosswordBox {
   constructor(
+    /**
+     * The character in the box.
+     */
     public readonly value: Char,
+
+    /**
+     * Whether or not the character is hidden.
+     */
     public readonly hidden: boolean,
+
+    /**
+     * Whether or not the character is highlighted.
+     */
     public active: boolean
   ) {}
 
+  /**
+   * @returns The value of the box
+   */
   toString() {
     return this.value;
   }
 }
 
+/**
+ * The crossword object.
+ */
 export class Crossword extends Grid<CrosswordBox> {
-  words: { [key: string]: WordInfo } = {};
+  /**
+   * The words in the crossword.
+   */
+  words: Record<string, WordInfo> = {};
 
-  constructor() {
-    super();
-  }
-
+  /**
+   * Places a word into the crossword.
+   * @param word The word to be placed.
+   * @param start The starting coordinates of the word
+   * @param vertical If the direction is vertical or not.
+   */
   placeWord(word: Word, start: Coords, vertical: boolean) {
+    // add the word to the map
     this.words[wordToString(word)] = { start, vertical, revealed: false };
-    if (vertical) {
-      for (let i = 0; i < word.length; i++) {
-        this.setElem(
-          { x: start.x, y: start.y + i },
-          new CrosswordBox(word[i], true, false)
-        );
-      }
-    } else {
-      for (let i = 0; i < word.length; i++) {
-        this.setElem(
-          { x: start.x + i, y: start.y },
-          new CrosswordBox(word[i], true, false)
-        );
-      }
+
+    // set the letters in the grid
+    for (let i = 0; i < word.length; i++) {
+      const coords = vertical
+        ? { x: start.x, y: start.y + i }
+        : { x: start.x + i, y: start.y };
+      this.setElem(coords, new CrosswordBox(word[i], true, false));
     }
   }
 
@@ -54,6 +79,12 @@ export class Crossword extends Grid<CrosswordBox> {
     return this.words[wordToString(word)];
   }
 
+  /**
+   * Reveals the given word if it is in the crossword.
+   * @param word The word to reveal
+   * @param active Whether or not to highlight the word
+   * @returns The crossword
+   */
   revealWord(word: Word, active: boolean): Crossword {
     const info = this.findWord(word);
     if (!info) {
@@ -75,18 +106,30 @@ export class Crossword extends Grid<CrosswordBox> {
     return Object.values(this.words).every((info) => info.revealed);
   }
 
+  /**
+   * Shifts the grid down such that all boxes y-coords are increased by the given count.
+   * @param count The number of boxes to move down
+   */
   shiftDown(count: number) {
     super.shiftDown(count);
 
     Object.values(this.words).forEach((word) => (word.start.y += count));
   }
 
+  /**
+   * Shift the grid right such that all boxes x-coords are increased by the given count.
+   * @param count The number of boxes to move right
+   */
   shiftRight(count: number) {
     super.shiftRight(count);
 
     Object.values(this.words).forEach((word) => (word.start.x += count));
   }
 
+  /**
+   * Removes the given column.
+   * @param x THe index of the column to be removed
+   */
   removeColumn(x: number): void {
     super.removeColumn(x);
 
@@ -97,6 +140,10 @@ export class Crossword extends Grid<CrosswordBox> {
     });
   }
 
+  /**
+   * Removes the given row.
+   * @param y The index of the row to be removed
+   */
   removeRow(y: number): void {
     super.removeRow(y);
 
@@ -108,7 +155,14 @@ export class Crossword extends Grid<CrosswordBox> {
   }
 }
 
+/**
+ * A type used for modifying coordinates.
+ */
 type CoordModifier = (c: Coords, z: number) => Coords;
+
+/**
+ * A type used to help build the crossword.
+ */
 interface BuilderInfo {
   primaryCoord: "x" | "y";
   secondaryCoord: "x" | "y";
@@ -124,6 +178,22 @@ interface BuilderInfo {
   wordStart: CoordModifier;
 }
 
+/**
+ * An interface to wrap a grid using builder info.
+ */
+interface Builder {
+  shift: (count: number) => void;
+  expand: (count: number) => void;
+  length: () => number;
+  lengthAltDir: () => number;
+}
+
+/**
+ * Builds a crossword
+ * @param words The list of words to be included
+ * @param rng The random number generator
+ * @returns The crossword
+ */
 export function buildCrossword(words: Word[], rng: PRNG): Crossword {
   const sortedWords = words.sort((a, b) => b.length - a.length);
 
@@ -161,11 +231,13 @@ export function buildCrossword(words: Word[], rng: PRNG): Crossword {
 
         let blocked = false;
         const bi = getBuilderInfo(vertical);
+        const builder = getBuilder(bi, grid);
+
         const start = coord[bi.primaryCoord] - randomLetterIndex;
         // check if there is room above/beside
         if (start < 0) {
           const diff = -start;
-          grid[bi.shiftFunction](diff);
+          builder.shift(diff);
           coordList.forEach((coord) => {
             coord[bi.primaryCoord] += diff;
           });
@@ -174,8 +246,8 @@ export function buildCrossword(words: Word[], rng: PRNG): Crossword {
         // check if there is room below
         const end =
           coord[bi.primaryCoord] - randomLetterIndex + currentWord.length;
-        if (end >= grid[bi.lengthFunction]()) {
-          grid[bi.expandFunction](end - grid[bi.lengthFunction]());
+        if (end >= builder.length()) {
+          grid[bi.expandFunction](end - builder.length());
         }
 
         for (let i = 0; i < currentWord.length && !blocked; i++) {
@@ -199,7 +271,7 @@ export function buildCrossword(words: Word[], rng: PRNG): Crossword {
             }
           } else if (i + 1 === currentWord.length) {
             const elemAfter =
-              z + 1 < grid[bi.lengthFunction]() &&
+              z + 1 < builder.length() &&
               grid.hasValue(bi.coordAfter(coord, z));
             if (elemAfter) {
               console.debug("Blocked at end", bi.coordAfter(coord, z));
@@ -225,7 +297,7 @@ export function buildCrossword(words: Word[], rng: PRNG): Crossword {
 
               blocked = true;
             } else if (
-              coord[bi.secondaryCoord] + 1 < grid[bi.lengthFunctionAltDir]() &&
+              coord[bi.secondaryCoord] + 1 < builder.lengthAltDir() &&
               grid.hasValue(bi.coordAfterAltDir(coord, z))
             ) {
               console.debug(
@@ -266,6 +338,11 @@ export function buildCrossword(words: Word[], rng: PRNG): Crossword {
   return cw;
 }
 
+/**
+ * Create an object to help access the grid.
+ * @param vertical Whether the direction is vertical or not
+ * @returns The builder info
+ */
 function getBuilderInfo(vertical: boolean): BuilderInfo {
   return vertical
     ? {
@@ -296,4 +373,27 @@ function getBuilderInfo(vertical: boolean): BuilderInfo {
         coordAt: (c: Coords, z: number) => ({ x: z, y: c.y }),
         wordStart: (c: Coords, index: number) => ({ x: c.x - index, y: c.y }),
       };
+}
+
+/**
+ * Create an object to help access the grid.
+ * @param bi The builder info
+ * @param grid The grid being accessed
+ * @returns The builder
+ */
+function getBuilder<T>(bi: BuilderInfo, grid: Grid<T>): Builder {
+  return {
+    expand(count: number) {
+      return grid[bi.expandFunction](count);
+    },
+    shift(count: number) {
+      return grid[bi.shiftFunction](count);
+    },
+    length() {
+      return grid[bi.lengthFunction]();
+    },
+    lengthAltDir() {
+      return grid[bi.lengthFunctionAltDir]();
+    },
+  };
 }

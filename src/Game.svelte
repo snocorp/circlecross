@@ -10,13 +10,23 @@
    */
   const ACTIVE_TIMEOUT = 1000;
 
+  /**
+   * Whether or not to show the fireworks component.
+   */
   let showFireworks = false;
 
+  /**
+   * Stop showing the fireworks.
+   */
   function stopFireworks() {
     document.body.classList.remove("fireworks");
     showFireworks = false;
   }
 
+  /**
+   * Handle a choice by the user.
+   * @param event The event holding the choice.
+   */
   function handleChoice(event: CustomEvent<Choice[]>) {
     const choices = event.detail;
     const chosenWord = choices.map((choice) => choice.letter);
@@ -45,8 +55,12 @@
     }
   }
 
+  /**
+   * The size of the SVG
+   */
   const svgSize = 1000;
 
+  /** The game instance. */
   export let game: Game | null = null;
 </script>
 
